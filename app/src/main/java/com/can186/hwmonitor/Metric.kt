@@ -13,7 +13,7 @@ enum class MetricType {
 data class Metric(
     val id: String,
     val name: String,
-    val path: String,
+    var path: String,
     val type: MetricType,
     var value: String = "--",
     var enabled: Boolean = true
