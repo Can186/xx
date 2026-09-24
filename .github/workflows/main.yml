@@ -1,8 +1,5 @@
 name: Build APK
-on:
-  push:
-分支: [ main ]
-  workflow_dispatch:
+on: push
 
 jobs:
   build:
