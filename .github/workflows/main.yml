@@ -31,6 +31,17 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=/opt/android-sdk" > local.properties
 
+      - name: Force gradle.properties
+        run: |
+          cat > gradle.properties << 'EOF'
+          org.gradle.jvmargs=-Xmx2048m
+          android.useAndroidX=true
+          android.enableJetifier=true
+          kotlin.code.style=official
+          android.nonTransitiveRClass=true
+          EOF
+          cat gradle.properties
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v3
         with:
