@@ -8,7 +8,9 @@ enum class MetricType {
     TEMP_C,
     BYTES_MB,
     RAW,
-    TRI_FIRST_PERCENT
+    TRI_FIRST_PERCENT,
+    TRI_SECOND_FREQ_KHZ,
+    MEM_INFO
 }
 
 data class Metric(
