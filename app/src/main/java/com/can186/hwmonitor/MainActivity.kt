@@ -27,7 +27,6 @@ class MainActivity : AppCompatActivity() {
             setPadding(32, 32, 32, 32)
         }
 
-        // Root 状态检查（使用 libsu）
         val isRoot = Shell.isAppGrantedRoot() == true
         val rootStatus = if (isRoot) "Root: 已获取" else "Root: 未获取"
         root.addView(TextView(this).apply {
@@ -62,6 +61,7 @@ class MainActivity : AppCompatActivity() {
                 setOnCheckedChangeListener { _, c ->
                     m.enabled = c
                     ConfigStore.saveMetrics(this@MainActivity, metrics)
+                    restartOverlay()
                 }
             })
 
@@ -78,12 +78,22 @@ class MainActivity : AppCompatActivity() {
                     if (!has) {
                         m.path = text.toString()
                         ConfigStore.saveMetrics(this@MainActivity, metrics)
+                        restartOverlay()
                     }
                 }
             })
 
             root.addView(row)
         }
+
+        root.addView(Button(this).apply {
+            text = "重置为默认路径"
+            setOnClickListener {
+                ConfigStore.reset(this@MainActivity)
+                metrics = ConfigStore.loadMetrics(this@MainActivity)
+                Toast.makeText(this@MainActivity, "重启 App 生效", Toast.LENGTH_LONG).show()
+            }
+        })
 
         root.addView(Button(this).apply {
             text = "启动悬浮窗"
@@ -100,5 +110,13 @@ class MainActivity : AppCompatActivity() {
         })
 
         setContentView(ScrollView(this).apply { addView(root) })
+    }
+
+    private fun restartOverlay() {
+        try {
+            stopService(Intent(this@MainActivity, OverlayService::class.java))
+            startService(Intent(this@MainActivity, OverlayService::class.java))
+        } catch (_: Exception) {
+        }
     }
 }
