@@ -6,11 +6,15 @@ enum class MetricType {
     FREQ_KHZ,
     TEMP_MC,
     TEMP_C,
+    TEMP_0_1C,
     BYTES_MB,
     RAW,
     TRI_FIRST_PERCENT,
     TRI_SECOND_FREQ_KHZ,
-    MEM_INFO
+    MEM_INFO,
+    CURRENT_UA,
+    VOLTAGE_UV,
+    POWER_W
 }
 
 data class Metric(
