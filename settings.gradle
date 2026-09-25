@@ -13,3 +13,6 @@ dependencyResolutionManagement {
         maven { url 'https://jitpack.io' }
     }
 }
+
+rootProject.name = "hw-monitor"
+include ':app'
