@@ -1,10 +1,17 @@
+// MainActivity.kt
 package com.can186.hwmonitor
 
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Switch
+import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
@@ -19,6 +26,16 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(32, 32, 32, 32)
         }
+
+        // Root 状态显示
+        val uid = android.os.Process.myUid()
+        val rootStatus = if (uid == 0) "Root: 已获取 (UID 0)" else "Root: 未获取 (UID $uid)"
+        root.addView(TextView(this).apply {
+            text = rootStatus
+            setTextColor(if (uid == 0) 0xFF00AA00.toInt() else 0xFFFF0000.toInt())
+            textSize = 16f
+            setPadding(0, 0, 0, 32)
+        })
 
         root.addView(Button(this).apply {
             text = "申请悬浮窗权限"
@@ -39,6 +56,7 @@ class MainActivity : AppCompatActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, 16, 0, 16)
             }
+
             row.addView(Switch(this).apply {
                 isChecked = m.enabled
                 setOnCheckedChangeListener { _, c ->
@@ -46,11 +64,16 @@ class MainActivity : AppCompatActivity() {
                     ConfigStore.saveMetrics(this@MainActivity, metrics)
                 }
             })
+
             row.addView(TextView(this).apply {
-                text = m.name; width = 120
+                text = m.name
+                width = 120
             })
+
             row.addView(EditText(this).apply {
-                setText(m.path); hint = "路径"; width = 500
+                setText(m.path)
+                hint = "path"
+                width = 500
                 setOnFocusChangeListener { _, has ->
                     if (!has) {
                         m.path = text.toString()
@@ -58,6 +81,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             })
+
             root.addView(row)
         }
 
@@ -67,6 +91,7 @@ class MainActivity : AppCompatActivity() {
                 startService(Intent(this@MainActivity, OverlayService::class.java))
             }
         })
+
         root.addView(Button(this).apply {
             text = "停止悬浮窗"
             setOnClickListener {
