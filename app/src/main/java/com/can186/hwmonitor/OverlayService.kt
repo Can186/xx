@@ -1,8 +1,12 @@
 package com.can186.hwmonitor
 
-import android.app.*
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.Typeface
@@ -50,19 +54,23 @@ class OverlayService : Service() {
     }
 
     private fun createOverlay() {
-        val cfg = ConfigStore.loadOverlay(this)
+        val alpha = ConfigStore.loadOverlayAlpha(this)
+        val font = ConfigStore.loadOverlayFont(this)
+        val textColor = ConfigStore.loadOverlayTextColor(this)
+        val position = ConfigStore.loadOverlayPosition(this)
+        val xy = ConfigStore.loadOverlayXY(this)
 
         overlayView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(8), dp(4), dp(8), dp(4))
-            setBackgroundColor(Color.argb((cfg[2] * 255).toInt(), 0, 0, 0))
+            setBackgroundColor(Color.argb((alpha * 255).toInt(), 0, 0, 0))
         }
 
         textView = TextView(this).apply {
             typeface = Typeface.MONOSPACE
-            setTextColor(Color.WHITE)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, cfg[3])
-            setLineSpacing(0f, 1.1f)
+            setTextColor(textColor)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, font)
+            setLineSpacing(0f, 1.15f)
             text = "loading..."
         }
         overlayView.addView(textView)
@@ -80,11 +88,9 @@ class OverlayService : Service() {
                     or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                     or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
-        ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = cfg[0].toInt()
-            y = cfg[1].toInt()
-        }
+        )
+
+        applyPosition(position, xy[0], xy[1])
 
         overlayView.setOnTouchListener(object : View.OnTouchListener {
             private var initX = 0
@@ -95,18 +101,20 @@ class OverlayService : Service() {
             override fun onTouch(v: View, e: MotionEvent): Boolean {
                 when (e.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        initX = params.x; initY = params.y
-                        touchX = e.rawX; touchY = e.rawY; return true
+                        initX = params.x
+                        initY = params.y
+                        touchX = e.rawX
+                        touchY = e.rawY
+                        return true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         params.x = initX + (e.rawX - touchX).toInt()
                         params.y = initY + (e.rawY - touchY).toInt()
-                        windowManager.updateViewLayout(overlayView, params); return true
+                        windowManager.updateViewLayout(overlayView, params)
+                        return true
                     }
                     MotionEvent.ACTION_UP -> {
-                        val old = ConfigStore.loadOverlay(this@OverlayService)
-                        ConfigStore.saveOverlay(this@OverlayService,
-                            params.x, params.y, old[2], old[3])
+                        ConfigStore.saveOverlayXY(this@OverlayService, params.x, params.y)
                         return true
                     }
                 }
@@ -117,10 +125,26 @@ class OverlayService : Service() {
         windowManager.addView(overlayView, params)
     }
 
+    private fun applyPosition(pos: OverlayPosition, x: Int, y: Int) {
+        when (pos) {
+            OverlayPosition.TOP_LEFT -> {
+                params.gravity = Gravity.TOP or Gravity.START
+                params.x = x; params.y = y
+            }
+            OverlayPosition.TOP_RIGHT -> {
+                params.gravity = Gravity.TOP or Gravity.END
+                params.x = x; params.y = y
+            }
+            OverlayPosition.BOTTOM_LEFT -> {
+                params.gravity = Gravity.BOTTOM or Gravity.START
+                params.x = x; params.y = y
+            }
+        }
+    }
+
     private fun updateView() {
         val sb = StringBuilder()
         val enabled = metrics.filter { it.enabled }
-
         enabled.groupBy { it.name }.forEach { (label, items) ->
             sb.append(String.format("%-4s", label))
             items.forEach { m ->
@@ -128,7 +152,6 @@ class OverlayService : Service() {
             }
             sb.append("\n")
         }
-
         textView.text = sb.toString().trimEnd()
     }
 
@@ -140,8 +163,10 @@ class OverlayService : Service() {
             val nm = getSystemService(NotificationManager::class.java)
             if (nm.getNotificationChannel(ch) == null) {
                 nm.createNotificationChannel(
-                    NotificationChannel(ch, "HW Monitor",
-                        NotificationManager.IMPORTANCE_LOW)
+                    NotificationChannel(
+                        ch, "HW Monitor",
+                        NotificationManager.IMPORTANCE_LOW
+                    )
                 )
             }
             val n = Notification.Builder(this, ch)
@@ -149,14 +174,22 @@ class OverlayService : Service() {
                 .setContentText("running")
                 .setSmallIcon(android.R.drawable.ic_menu_info_details)
                 .build()
-            startForeground(1, n)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(1, n)
+            }
         }
     }
 
     override fun onDestroy() {
         running = false
         handler.removeCallbacks(loop)
-        try { windowManager.removeView(overlayView) } catch (_: Exception) {}
+        try {
+            windowManager.removeView(overlayView)
+        } catch (_: Exception) {
+        }
         super.onDestroy()
     }
 }
