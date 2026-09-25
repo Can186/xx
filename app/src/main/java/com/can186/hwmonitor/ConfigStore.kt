@@ -95,10 +95,14 @@ object ConfigStore {
             .getInt(KEY_TEXT_COLOR, 0xFFFFFFFF.toInt())
 
     fun loadOverlayPosition(ctx: Context): OverlayPosition {
-        // 修复点：这里补全了变量名 s
+        // 修复点：补全变量名 s
         val  = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
             .getString(KEY_POSITION, OverlayPosition.TOP_LEFT.name)
-        return try { OverlayPosition.valueOf(s ?: "TOP_LEFT") } catch (e: Exception) { OverlayPosition.TOP_LEFT }
+        return try {
+            OverlayPosition.valueOf(s ?: "TOP_LEFT")
+        } catch (e: Exception) {
+            OverlayPosition.TOP_LEFT
+        }
     }
 
     fun loadOverlayXY(ctx: Context): IntArray {
