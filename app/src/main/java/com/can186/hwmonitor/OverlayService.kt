@@ -119,9 +119,16 @@ class OverlayService : Service() {
 
     private fun updateView() {
         val sb = StringBuilder()
-        metrics.filter { it.enabled }.forEach { m ->
-            sb.append(String.format("%-4s %s\n", m.name, m.value))
+        val enabled = metrics.filter { it.enabled }
+
+        enabled.groupBy { it.name }.forEach { (label, items) ->
+            sb.append(String.format("%-4s", label))
+            items.forEach { m ->
+                sb.append(" ").append(m.value)
+            }
+            sb.append("\n")
         }
+
         textView.text = sb.toString().trimEnd()
     }
 
