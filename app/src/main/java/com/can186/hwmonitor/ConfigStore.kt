@@ -96,7 +96,7 @@ object ConfigStore {
 
     fun loadOverlayPosition(ctx: Context): OverlayPosition {
         // ✅ 注意看这里，必须是 "val s ="，不能写成 "val ="
-        val p = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+        val s = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
             .getString(KEY_POSITION, OverlayPosition.TOP_LEFT.name)
         return try {
             OverlayPosition.valueOf(s ?: "TOP_LEFT")
@@ -106,7 +106,7 @@ object ConfigStore {
     }
 
     fun loadOverlayXY(ctx: Context): IntArray {
-        val v = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+        val s = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
         return intArrayOf(sp.getInt(KEY_X, 0), sp.getInt(KEY_Y, 100))
     }
 
