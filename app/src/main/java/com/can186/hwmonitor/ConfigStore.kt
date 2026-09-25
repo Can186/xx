@@ -17,8 +17,10 @@ object ConfigStore {
         val arr = JSONArray()
         metrics.forEach { m ->
             arr.put(JSONObject().apply {
-                put("id", m.id); put("name", m.name)
-                put("path", m.path); put("type", m.type.name)
+                put("id", m.id)
+                put("name", m.name)
+                put("path", m.path)
+                put("type", m.type.name)
                 put("enabled", m.enabled)
             })
         }
@@ -36,23 +38,31 @@ object ConfigStore {
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
                 list.add(Metric(
-                    o.getString("id"), o.getString("name"),
+                    o.getString("id"),
+                    o.getString("name"),
                     o.getString("path"),
                     MetricType.valueOf(o.getString("type")),
                     enabled = o.optBoolean("enabled", true)
                 ))
             }
             list
-        } catch (e: Exception) { defaults() }
+        } catch (e: Exception) {
+            defaults()
+        }
+    }
+
+    fun reset(ctx: Context) {
+        ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+            .edit().remove(KEY_METRICS).apply()
     }
 
     private fun defaults(): MutableList<Metric> = mutableListOf(
         Metric("cpu_usage", "CPU", "/proc/stat", MetricType.PERCENT),
         Metric("cpu_freq",  "CPU", "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", MetricType.FREQ_KHZ),
-        Metric("cpu_temp",  "CPU", "/sys/class/thermal/thermal_zone0/temp", MetricType.TEMP_MC),
-        Metric("gpu_usage", "GPU", "/sys/class/misc/mali0/device/utilization", MetricType.PERCENT),
-        Metric("gpu_freq",  "GPU", "/sys/class/devfreq/13000000.mali/cur_freq", MetricType.FREQ_MHZ),
-        Metric("mem",       "MEM", "/proc/meminfo", MetricType.RAW)
+        Metric("cpu_temp",  "CPU", "/sys/class/thermal/thermal_zone5/temp", MetricType.TEMP_MC),
+        Metric("gpu_usage", "GPU", "/sys/kernel/ged/hal/gpu_utilization", MetricType.TRI_FIRST_PERCENT),
+        Metric("gpu_freq",  "GPU", "/sys/kernel/ged/hal/current_freqency", MetricType.TRI_SECOND_FREQ_KHZ),
+        Metric("mem",       "MEM", "/proc/meminfo", MetricType.MEM_INFO)
     )
 
     fun saveOverlay(ctx: Context, x: Int, y: Int, alpha: Float, font: Float) {
