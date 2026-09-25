@@ -1,4 +1,3 @@
-// MainActivity.kt
 package com.can186.hwmonitor
 
 import android.content.Intent
@@ -13,6 +12,7 @@ import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.topjohnwu.superuser.Shell
 
 class MainActivity : AppCompatActivity() {
 
@@ -27,12 +27,12 @@ class MainActivity : AppCompatActivity() {
             setPadding(32, 32, 32, 32)
         }
 
-        // Root 状态显示
-        val uid = android.os.Process.myUid()
-        val rootStatus = if (uid == 0) "Root: 已获取 (UID 0)" else "Root: 未获取 (UID $uid)"
+        // Root 状态检查（使用 libsu）
+        val isRoot = Shell.isAppGrantedRoot() == true
+        val rootStatus = if (isRoot) "Root: 已获取" else "Root: 未获取"
         root.addView(TextView(this).apply {
             text = rootStatus
-            setTextColor(if (uid == 0) 0xFF00AA00.toInt() else 0xFFFF0000.toInt())
+            setTextColor(if (isRoot) 0xFF00AA00.toInt() else 0xFFFF0000.toInt())
             textSize = 16f
             setPadding(0, 0, 0, 32)
         })
