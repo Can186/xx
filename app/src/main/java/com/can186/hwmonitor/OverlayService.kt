@@ -90,37 +90,26 @@ class OverlayService : Service() {
             PixelFormat.TRANSLUCENT
         )
 
-        applyPosition(position, xy[0], xy[1])
-
-        overlayView.setOnTouchListener(object : View.OnTouchListener {
-            private var initX = 0
-            private var initY = 0
-            private var touchX = 0f
-            private var touchY = 0f
-
-            override fun onTouch(v: View, e: MotionEvent): Boolean {
-                when (e.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initX = params.x
-                        initY = params.y
-                        touchX = e.rawX
-                        touchY = e.rawY
-                        return true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        params.x = initX + (e.rawX - touchX).toInt()
-                        params.y = initY + (e.rawY - touchY).toInt()
-                        windowManager.updateViewLayout(overlayView, params)
-                        return true
-                    }
-                    MotionEvent.ACTION_UP -> {
-                        ConfigStore.saveOverlayXY(this@OverlayService, params.x, params.y)
-                        return true
-                    }
-                }
-                return false
-            }
-        })
+        private fun applyPosition(pos: OverlayPosition, x: Int, y: Int) {
+    when (pos) {
+        OverlayPosition.TOP_LEFT -> {
+            params.gravity = Gravity.TOP or Gravity.START
+            params.x = x; params.y = y
+        }
+        OverlayPosition.TOP_RIGHT -> {
+            params.gravity = Gravity.TOP or Gravity.END
+            params.x = x; params.y = y
+        }
+        OverlayPosition.BOTTOM_LEFT -> {
+            params.gravity = Gravity.BOTTOM or Gravity.START
+            params.x = x; params.y = y
+        }
+        OverlayPosition.BOTTOM_RIGHT -> { // 补全这个分支
+            params.gravity = Gravity.BOTTOM or Gravity.END
+            params.x = x; params.y = y
+        }
+    }
+        }
 
         windowManager.addView(overlayView, params)
     }
