@@ -95,7 +95,7 @@ object ConfigStore {
             .getInt(KEY_TEXT_COLOR, 0xFFFFFFFF.toInt())
 
     fun loadOverlayPosition(ctx: Context): OverlayPosition {
-        // ✅ 关键修复点：这一行必须是 "val s ="，不能是 "val ="
+        // ✅ 注意看这里，必须是 "val s ="，不能写成 "val ="
         val  = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
             .getString(KEY_POSITION, OverlayPosition.TOP_LEFT.name)
         return try {
