@@ -52,7 +52,15 @@ class OverlayService : Service() {
         running = true
         handler.post(loop)
     }
-
+    override fun onTouch(v: View, e: MotionEvent): Boolean {
+    when (e.action) {
+        MotionEvent.ACTION_DOWN -> { /* ... */ return true }
+        MotionEvent.ACTION_MOVE -> { /* ... */ return true }
+        MotionEvent.ACTION_UP -> { /* ... */ return true }
+        else -> return false // 补全 else
+    }
+    }
+    
     private fun createOverlay() {
         val alpha = ConfigStore.loadOverlayAlpha(this)
         val font = ConfigStore.loadOverlayFont(this)
