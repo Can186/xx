@@ -35,6 +35,7 @@ object MetricsProvider {
         if (!m.enabled) return "--"
         if (m.id == "cpu_usage") return readCpuUsage()
         if (m.type == MetricType.MEM_INFO) return readMemInfo()
+        if (m.type == MetricType.POWER_W) return readPowerW()
 
         val raw = readRaw(m.path)
         if (raw == "--") return "--"
@@ -46,6 +47,7 @@ object MetricsProvider {
                 MetricType.FREQ_KHZ -> "${raw.toLong() / 1000}MHz"
                 MetricType.TEMP_MC -> "${raw.toLong() / 1000}°C"
                 MetricType.TEMP_C -> "${raw.toFloat().toInt()}°C"
+                MetricType.TEMP_0_1C -> String.format("%.1f°C", raw.toFloat() / 10.0f)
                 MetricType.BYTES_MB -> "${raw.toLong() / 1024 / 1024}MB"
                 MetricType.RAW -> raw
                 MetricType.TRI_FIRST_PERCENT -> {
@@ -57,6 +59,9 @@ object MetricsProvider {
                     val freq = parts.getOrNull(1) ?: return "--"
                     "${freq.toLong() / 1000}MHz"
                 }
+                MetricType.CURRENT_UA -> String.format("%.0fmA", raw.toFloat() / 1000.0f)
+                MetricType.VOLTAGE_UV -> String.format("%.2fV", raw.toFloat() / 1_000_000.0f)
+                MetricType.POWER_W -> readPowerW()
                 MetricType.MEM_INFO -> readMemInfo()
             }
         } catch (e: Exception) {
@@ -112,7 +117,22 @@ object MetricsProvider {
             val used = total - available
             val usedGB = used / 1024.0 / 1024.0
             val totalGB = total / 1024.0 / 1024.0
-            String.format("%.1f/%.1fGB", usedGB, totalGB)
+            val percent = (used * 100 / total).toInt()
+            String.format("%d%% %.1f/%.1fGB", percent, usedGB, totalGB)
+        } catch (e: Exception) {
+            "--"
+        }
+    }
+
+    private fun readPowerW(): String {
+        return try {
+            val cResult = Shell.cmd("cat /sys/class/power_supply/battery/current_now").exec()
+            val vResult = Shell.cmd("cat /sys/class/power_supply/battery/voltage_now").exec()
+            if (!cResult.isSuccess || !vResult.isSuccess) return "--"
+            val currentUa = cResult.out.firstOrNull()?.trim()?.toFloatOrNull() ?: return "--"
+            val voltageUv = vResult.out.firstOrNull()?.trim()?.toFloatOrNull() ?: return "--"
+            val powerW = (currentUa / 1_000_000.0f) * (voltageUv / 1_000_000.0f)
+            String.format("%.2fW", powerW)
         } catch (e: Exception) {
             "--"
         }
