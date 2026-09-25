@@ -6,10 +6,8 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
-import android.graphics.Typeface
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -52,15 +50,7 @@ class OverlayService : Service() {
         running = true
         handler.post(loop)
     }
-    override fun onTouch(v: View, e: MotionEvent): Boolean {
-    when (e.action) {
-        MotionEvent.ACTION_DOWN -> { /* ... */ return true }
-        MotionEvent.ACTION_MOVE -> { /* ... */ return true }
-        MotionEvent.ACTION_UP -> { /* ... */ return true }
-        else -> return false // 补全 else
-    }
-    }
-    
+
     private fun createOverlay() {
         val alpha = ConfigStore.loadOverlayAlpha(this)
         val font = ConfigStore.loadOverlayFont(this)
@@ -75,7 +65,7 @@ class OverlayService : Service() {
         }
 
         textView = TextView(this).apply {
-            typeface = Typeface.MONOSPACE
+            typeface = android.graphics.Typeface.MONOSPACE
             setTextColor(textColor)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, font)
             setLineSpacing(0f, 1.15f)
@@ -98,26 +88,37 @@ class OverlayService : Service() {
             PixelFormat.TRANSLUCENT
         )
 
-        private fun applyPosition(pos: OverlayPosition, x: Int, y: Int) {
-    when (pos) {
-        OverlayPosition.TOP_LEFT -> {
-            params.gravity = Gravity.TOP or Gravity.START
-            params.x = x; params.y = y
-        }
-        OverlayPosition.TOP_RIGHT -> {
-            params.gravity = Gravity.TOP or Gravity.END
-            params.x = x; params.y = y
-        }
-        OverlayPosition.BOTTOM_LEFT -> {
-            params.gravity = Gravity.BOTTOM or Gravity.START
-            params.x = x; params.y = y
-        }
-        OverlayPosition.BOTTOM_RIGHT -> { // 补全这个分支
-            params.gravity = Gravity.BOTTOM or Gravity.END
-            params.x = x; params.y = y
-        }
-    }
-        }
+        applyPosition(position, xy[0], xy[1])
+
+        overlayView.setOnTouchListener(object : View.OnTouchListener {
+            private var initX = 0
+            private var initY = 0
+            private var touchX = 0f
+            private var touchY = 0f
+
+            override fun onTouch(v: View, e: MotionEvent): Boolean {
+                when (e.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        initX = params.x
+                        initY = params.y
+                        touchX = e.rawX
+                        touchY = e.rawY
+                        return true
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        params.x = initX + (e.rawX - touchX).toInt()
+                        params.y = initY + (e.rawY - touchY).toInt()
+                        windowManager.updateViewLayout(overlayView, params)
+                        return true
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        ConfigStore.saveOverlayXY(this@OverlayService, params.x, params.y)
+                        return true
+                    }
+                    else -> return false // 修复点：补全 else
+                }
+            }
+        })
 
         windowManager.addView(overlayView, params)
     }
@@ -136,6 +137,10 @@ class OverlayService : Service() {
                 params.gravity = Gravity.BOTTOM or Gravity.START
                 params.x = x; params.y = y
             }
+            OverlayPosition.BOTTOM_RIGHT -> { // 修复点：补全 BOTTOM_RIGHT 分支
+                params.gravity = Gravity.BOTTOM or Gravity.END
+                params.x = x; params.y = y
+            }
         }
     }
 
@@ -152,31 +157,27 @@ class OverlayService : Service() {
         textView.text = sb.toString().trimEnd()
     }
 
-    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
     private fun startForegroundNotification() {
         val ch = "hw_monitor"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val nm = getSystemService(NotificationManager::class.java)
-            if (nm.getNotificationChannel(ch) == null) {
-                nm.createNotificationChannel(
-                    NotificationChannel(
-                        ch, "HW Monitor",
-                        NotificationManager.IMPORTANCE_LOW
-                    )
-                )
-            }
-            val n = Notification.Builder(this, ch)
+            val channel = NotificationChannel(ch, "HW Monitor", NotificationManager.IMPORTANCE_LOW)
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+            val notification = Notification.Builder(this, ch)
                 .setContentTitle("HW Monitor")
-                .setContentText("running")
+                .setContentText("Monitoring in background")
                 .setSmallIcon(android.R.drawable.ic_menu_info_details)
                 .build()
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-            } else {
-                startForeground(1, n)
-            }
+            startForeground(1, notification)
+        } else {
+            val notification = Notification.Builder(this)
+                .setContentTitle("HW Monitor")
+                .setContentText("Monitoring in background")
+                .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                .build()
+            startForeground(1, notification)
         }
     }
 
