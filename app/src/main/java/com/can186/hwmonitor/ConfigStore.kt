@@ -95,9 +95,10 @@ object ConfigStore {
             .getInt(KEY_TEXT_COLOR, 0xFFFFFFFF.toInt())
 
     fun loadOverlayPosition(ctx: Context): OverlayPosition {
-        val  = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
-            .getString(KEY_POSITION, OverlayPosition.TOP_LEFT.name)
-        return try { OverlayPosition.valueOf(s ?: "TOP_LEFT") } catch (e: Exception) { OverlayPosition.TOP_LEFT }
+    // 补上变量名 s
+    val  = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+        .getString(KEY_POSITION, OverlayPosition.TOP_LEFT.name)
+    return try { OverlayPosition.valueOf(s ?: "TOP_LEFT") } catch (e: Exception) { OverlayPosition.TOP_LEFT }
     }
 
     fun loadOverlayXY(ctx: Context): IntArray {
