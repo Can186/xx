@@ -20,6 +20,7 @@ enum class MetricType {
 data class Metric(
     val id: String,
     val name: String,
+    val label: String,
     var path: String,
     val type: MetricType,
     var value: String = "--",
@@ -27,3 +28,5 @@ data class Metric(
 )
 
 enum class ReadMode { BASIC, ROOT, SHIZUKU }
+
+enum class OverlayPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
