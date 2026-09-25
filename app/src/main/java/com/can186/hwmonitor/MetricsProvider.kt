@@ -1,7 +1,7 @@
 package com.can186.hwmonitor
 
 import android.util.Log
-import java.io.File
+import com.topjohnwu.superuser.Shell
 
 object MetricsProvider {
 
@@ -9,12 +9,21 @@ object MetricsProvider {
     private var prevCpuTotal = 0L
     private var prevCpuBusy = 0L
 
+    init {
+        Shell.enableVerboseLogging = false
+        Shell.setDefaultBuilder(
+            Shell.Builder.create()
+                .setFlags(Shell.FLAG_REDIRECT_STDERR)
+                .setTimeout(10)
+        )
+    }
+
     private fun readRaw(path: String): String {
         if (path.isBlank()) return "--"
         return try {
-            val f = File(path)
-            if (!f.exists() || !f.canRead()) return "--"
-            val text = f.readText().trim()
+            val result = Shell.cmd("cat $path").exec()
+            if (!result.isSuccess) return "--"
+            val text = result.out.joinToString("").trim()
             if (text.isEmpty()) "--" else text
         } catch (e: Exception) {
             Log.w(TAG, "read fail: $path -> ${e.message}")
@@ -38,6 +47,10 @@ object MetricsProvider {
                 MetricType.TEMP_C -> "${raw.toFloat().toInt()}°C"
                 MetricType.BYTES_MB -> "${raw.toLong() / 1024 / 1024}MB"
                 MetricType.RAW -> raw
+                MetricType.TRI_FIRST_PERCENT -> {
+                    val first = raw.split("\\s+".toRegex()).firstOrNull() ?: return "--"
+                    "${first.toInt()}%"
+                }
             }
         } catch (e: Exception) {
             "--"
@@ -46,8 +59,9 @@ object MetricsProvider {
 
     private fun readCpuUsage(): String {
         return try {
-            val line = File("/proc/stat").readLines()
-                .firstOrNull { it.startsWith("cpu ") } ?: return "--"
+            val result = Shell.cmd("cat /proc/stat").exec()
+            if (!result.isSuccess) return "--"
+            val line = result.out.firstOrNull { it.startsWith("cpu ") } ?: return "--"
             val p = line.split("\\s+".toRegex())
             if (p.size < 8) return "--"
 
@@ -56,14 +70,19 @@ object MetricsProvider {
             val busy = total - p[4].toLong() - p[5].toLong()
 
             if (prevCpuTotal == 0L) {
-                prevCpuTotal = total; prevCpuBusy = busy; return "--"
+                prevCpuTotal = total
+                prevCpuBusy = busy
+                return "--"
             }
             val dT = total - prevCpuTotal
             val dB = busy - prevCpuBusy
-            prevCpuTotal = total; prevCpuBusy = busy
+            prevCpuTotal = total
+            prevCpuBusy = busy
 
             if (dT <= 0) "--" else "${(dB * 100 / dT).toInt()}%"
-        } catch (e: Exception) { "--" }
+        } catch (e: Exception) {
+            "--"
+        }
     }
 
     fun refreshAll(metrics: List<Metric>) {
