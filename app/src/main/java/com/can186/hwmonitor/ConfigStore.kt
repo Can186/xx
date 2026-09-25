@@ -106,7 +106,7 @@ object ConfigStore {
     }
 
     fun loadOverlayXY(ctx: Context): IntArray {
-        val sp = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+        val  = ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
         return intArrayOf(sp.getInt(KEY_X, 0), sp.getInt(KEY_Y, 100))
     }
 
