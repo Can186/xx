@@ -34,6 +34,7 @@ object MetricsProvider {
     fun readMetric(m: Metric): String {
         if (!m.enabled) return "--"
         if (m.id == "cpu_usage") return readCpuUsage()
+        if (m.type == MetricType.MEM_INFO) return readMemInfo()
 
         val raw = readRaw(m.path)
         if (raw == "--") return "--"
@@ -51,6 +52,12 @@ object MetricsProvider {
                     val first = raw.split("\\s+".toRegex()).firstOrNull() ?: return "--"
                     "${first.toInt()}%"
                 }
+                MetricType.TRI_SECOND_FREQ_KHZ -> {
+                    val parts = raw.split("\\s+".toRegex())
+                    val freq = parts.getOrNull(1) ?: return "--"
+                    "${freq.toLong() / 1000}MHz"
+                }
+                MetricType.MEM_INFO -> readMemInfo()
             }
         } catch (e: Exception) {
             "--"
@@ -80,6 +87,32 @@ object MetricsProvider {
             prevCpuBusy = busy
 
             if (dT <= 0) "--" else "${(dB * 100 / dT).toInt()}%"
+        } catch (e: Exception) {
+            "--"
+        }
+    }
+
+    private fun readMemInfo(): String {
+        return try {
+            val result = Shell.cmd("cat /proc/meminfo").exec()
+            if (!result.isSuccess) return "--"
+            var total = 0L
+            var available = 0L
+            for (line in result.out) {
+                when {
+                    line.startsWith("MemTotal:") -> {
+                        total = line.split("\\s+".toRegex()).getOrNull(1)?.toLongOrNull() ?: 0L
+                    }
+                    line.startsWith("MemAvailable:") -> {
+                        available = line.split("\\s+".toRegex()).getOrNull(1)?.toLongOrNull() ?: 0L
+                    }
+                }
+            }
+            if (total == 0L) return "--"
+            val used = total - available
+            val usedGB = used / 1024.0 / 1024.0
+            val totalGB = total / 1024.0 / 1024.0
+            String.format("%.1f/%.1fGB", usedGB, totalGB)
         } catch (e: Exception) {
             "--"
         }
