@@ -7,7 +7,8 @@ enum class MetricType {
     TEMP_MC,
     TEMP_C,
     BYTES_MB,
-    RAW
+    RAW,
+    TRI_FIRST_PERCENT
 }
 
 data class Metric(
