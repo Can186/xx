@@ -59,10 +59,13 @@ object ConfigStore {
     private fun defaults(): MutableList<Metric> = mutableListOf(
         Metric("cpu_usage", "CPU", "/proc/stat", MetricType.PERCENT),
         Metric("cpu_freq",  "CPU", "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq", MetricType.FREQ_KHZ),
-        Metric("cpu_temp",  "CPU", "/sys/class/thermal/thermal_zone5/temp", MetricType.TEMP_MC),
+        Metric("cpu_temp",  "CPU", "/sys/class/thermal/thermal_zone1/temp", MetricType.TEMP_MC),
         Metric("gpu_usage", "GPU", "/sys/kernel/ged/hal/gpu_utilization", MetricType.TRI_FIRST_PERCENT),
         Metric("gpu_freq",  "GPU", "/sys/kernel/ged/hal/current_freqency", MetricType.TRI_SECOND_FREQ_KHZ),
-        Metric("mem",       "MEM", "/proc/meminfo", MetricType.MEM_INFO)
+        Metric("mem",       "MEM", "/proc/meminfo", MetricType.MEM_INFO),
+        Metric("bat_cap",   "BAT", "/sys/class/power_supply/battery/capacity", MetricType.PERCENT),
+        Metric("bat_temp",  "BAT", "/sys/class/power_supply/battery/temp", MetricType.TEMP_0_1C),
+        Metric("bat_pwr",   "BAT", "/sys/class/power_supply/battery/current_now", MetricType.POWER_W)
     )
 
     fun saveOverlay(ctx: Context, x: Int, y: Int, alpha: Float, font: Float) {
